@@ -1,0 +1,18 @@
+# Node / Editor
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+*.idsig
+
+# Android Build Intermediates
+android_build/obj/
+android_build/gen/
+android_build/*.zip
+android_build/base.apk
+android_build/aligned.apk
+android_build/classes.dex
+android_build/debug.keystore
+
+# Keep the compiled localchat.apk in the root
+!localchat.apk
