@@ -15,7 +15,7 @@ $jar = Join-Path $JavaBin "jar.exe"
 $keytool = Join-Path $JavaBin "keytool.exe"
 
 Write-Host "==> Aktualisiere Web-Assets im Android-Projekt..." -ForegroundColor Cyan
-Copy-Item index.html, styles.css, app.js, config.js -Destination android_build\assets\ -Force
+Copy-Item index.html, styles.css, app.js, config.js, logo.svg, favicon.svg -Destination android_build\assets\ -Force
 
 Push-Location android_build
 try {

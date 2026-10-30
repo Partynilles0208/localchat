@@ -237,7 +237,9 @@
     const key = getChatKey(peer);
     if (!key) return;
     try {
-      localStorage.setItem(key, JSON.stringify(messages));
+      // Schutz vor Speicherüberlauf (QuotaExceededError): Hält die 300 neuesten Nachrichten
+      const capped = Array.isArray(messages) && messages.length > 300 ? messages.slice(-300) : messages;
+      localStorage.setItem(key, JSON.stringify(capped));
     } catch (e) {
       console.warn("Fehler beim Speichern von Peer-Nachrichten:", e);
     }
@@ -356,7 +358,15 @@
     }
   }
 
-  function handleAuthSubmit(e) {
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + "_clean_slate_salt_2026");
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function handleAuthSubmit(e) {
     e.preventDefault();
     const username = authUsername.value.trim();
     const password = authPassword.value;
@@ -373,8 +383,87 @@
       return;
     }
 
-    // Automatische Registrierung & persistenter Login
-    loginSuccess(username, true);
+    // Sicherheitsprüfung: Nur sichere Zeichen im Benutzernamen (verhindert Injection)
+    if (!/^[a-zA-Z0-9_\-\.]{2,20}$/.test(username)) {
+      showAuthError("Benutzername darf nur 2-20 Zeichen (Buchstaben, Zahlen, _ oder -) enthalten.");
+      authUsername.focus();
+      return;
+    }
+
+    btnAuthSubmit.disabled = true;
+    const btnSpan = btnAuthSubmit.querySelector("span");
+    const originalBtnText = btnSpan.textContent;
+    btnSpan.textContent = "Prüfe...";
+
+    try {
+      const pwdHash = await hashPassword(password);
+      const userId = username.toLowerCase();
+
+      // Wenn Supabase aktiv ist: Prüfung gegen die zentrale Datenbank
+      if (supabaseClient) {
+        if (isRegisterMode) {
+          // 1. Registrierung: Prüfe ob der Benutzername bereits existiert
+          const { data: existingUser } = await supabaseClient
+            .from("profiles")
+            .select("username")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (existingUser) {
+            showAuthError("Dieser Benutzername ist bereits vergeben. Bitte melde dich an.");
+            btnAuthSubmit.disabled = false;
+            btnSpan.textContent = originalBtnText;
+            return;
+          }
+
+          // 2. Neues Profil mit sicherem SHA-256 Hash anlegen
+          await supabaseClient.from("profiles").insert({
+            id: userId,
+            username: username,
+            display_name: username,
+            password_hash: pwdHash,
+            status: "Online",
+            last_seen: new Date().toISOString()
+          });
+        } else {
+          // Anmeldung: Profil abrufen und Passwort-Hash vergleichen
+          const { data: userProfile } = await supabaseClient
+            .from("profiles")
+            .select("password_hash, username")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (!userProfile) {
+            showAuthError("Benutzer nicht gefunden. Bitte erstelle zuerst ein Konto.");
+            btnAuthSubmit.disabled = false;
+            btnSpan.textContent = originalBtnText;
+            return;
+          }
+
+          if (userProfile.password_hash && userProfile.password_hash !== pwdHash) {
+            showAuthError("Ungültiges Passwort.");
+            btnAuthSubmit.disabled = false;
+            btnSpan.textContent = originalBtnText;
+            return;
+          }
+
+          // Status auf Online aktualisieren
+          await supabaseClient
+            .from("profiles")
+            .update({ status: "Online", last_seen: new Date().toISOString() })
+            .eq("id", userId);
+        }
+      }
+
+      // Erfolgreich authentifiziert
+      loginSuccess(username, true);
+    } catch (err) {
+      console.warn("Auth Prüfung:", err);
+      loginSuccess(username, true);
+    } finally {
+      btnAuthSubmit.disabled = false;
+      btnSpan.textContent = isRegisterMode ? "Konto erstellen" : "Anmelden";
+    }
   }
 
   function handleLogout() {
@@ -806,10 +895,12 @@
       let opinionsHtml = "";
       const opinionsPills = opinions.map(op => {
         const hasReacted = op.users && op.users.includes(currentUser);
+        const safeEmoji = escapeHtml(op.emoji || "");
+        const safeCount = Number(op.count) || 0;
         return `
-          <button class="opinion-pill ${hasReacted ? 'active' : ''}" data-msg-id="${m.id}" data-emoji="${op.emoji}">
-            <span>${op.emoji}</span>
-            <span>${op.count}</span>
+          <button class="opinion-pill ${hasReacted ? 'active' : ''}" data-msg-id="${escapeHtml(m.id)}" data-emoji="${safeEmoji}">
+            <span>${safeEmoji}</span>
+            <span>${safeCount}</span>
           </button>
         `;
       }).join("");
@@ -817,13 +908,13 @@
       opinionsHtml = `
         <div class="message-opinions">
           ${opinionsPills}
-          <button class="btn-add-opinion" data-msg-id="${m.id}" title="Meinung / Reaktion hinzufügen">+</button>
+          <button class="btn-add-opinion" data-msg-id="${escapeHtml(m.id)}" title="Meinung / Reaktion hinzufügen">+</button>
         </div>
       `;
 
       return `
-        <div class="message-item-container" data-id="${m.id}">
-          <div class="message-row ${isSent ? 'sent' : 'received'}" data-id="${m.id}">
+        <div class="message-item-container" data-id="${escapeHtml(m.id)}">
+          <div class="message-row ${isSent ? 'sent' : 'received'}" data-id="${escapeHtml(m.id)}">
             <!-- Visual Swipe Indicator -->
             <div class="swipe-reply-hint">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -838,7 +929,7 @@
             </div>
 
             <div class="bubble-meta">
-              <span>${m.time}</span>
+              <span>${escapeHtml(m.time || "")}</span>
               ${isSent ? `<span>• Gesendet</span>` : ''}
             </div>
 

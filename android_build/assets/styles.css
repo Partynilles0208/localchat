@@ -144,8 +144,29 @@ html, body {
 
 .header-title-wrap {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+}
+
+.sidebar-brand-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.brand-logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.brand-logo-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .header-title {

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Deep Obsidian Subtle Gradient -->
+    <linearGradient id="obsidianGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="50%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+
+    <!-- Crisp Platinum Gradient -->
+    <linearGradient id="platinumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d4d4d8"/>
+    </linearGradient>
+
+    <!-- Subtle Slate Shadow -->
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base Container (Rounded Superellipse) -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#obsidianGrad)" filter="url(#subtleGlow)"/>
+  
+  <!-- Razor Thin 1px Hairline Perimeter Border -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="2.5"/>
+
+  <!-- Iconic Clean Slate Geometry: Minimalist Swiss Chat Nexus -->
+  <g transform="translate(256, 256)">
+    <!-- Primary Plane: Minimal Crisp Chat Slate -->
+    <path d="M -85 -100 L 70 -100 C 95 -100 115 -80 115 -55 L 115 45 C 115 70 95 90 70 90 L -15 90 L -75 135 L -60 90 L -85 90 C -110 90 -130 70 -130 45 L -130 -55 C -130 -80 -110 -100 -85 -100 Z" 
+          fill="none" 
+          stroke="url(#platinumGrad)" 
+          stroke-width="18" 
+          stroke-linejoin="round"
+          stroke-linecap="round"/>
+
+    <!-- Dynamic Central Precision Monolith / Spark of Transmission -->
+    <circle cx="-35" cy="-5" r="10" fill="#ffffff"/>
+    <circle cx="0" cy="-5" r="10" fill="#ffffff" fill-opacity="0.8"/>
+    <circle cx="35" cy="-5" r="10" fill="#ffffff" fill-opacity="0.45"/>
+  </g>
+</svg>

@@ -3,16 +3,20 @@
 -- =============================================================================
 -- Führe diesen SQL-Code im Supabase SQL Editor aus (SQL Editor -> New Query -> Run)
 
--- 1. Tabelle für registrierte Benutzer (Automatische Kontaktfindung)
+-- 1. Tabelle für registrierte Benutzer (Sichere Authentifizierung & Kontaktfindung)
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id TEXT PRIMARY KEY,                       -- Eindeutige Kennung / Benutzername
+    id TEXT PRIMARY KEY,                       -- Eindeutige Kennung (username klein)
     username TEXT UNIQUE NOT NULL,             -- Anzeigename
     display_name TEXT,
+    password_hash TEXT,                        -- SHA-256 kryptografischer Passwort-Hash
     avatar_url TEXT,
     status TEXT DEFAULT 'Online',              -- 'Online', 'Abwesend', etc.
     last_seen TIMESTAMPTZ DEFAULT NOW(),       -- Zuletzt online
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Spalte hinzufügen falls bereits erstellt
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;
 
 -- RLS aktivieren (Row Level Security)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
