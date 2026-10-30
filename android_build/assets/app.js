@@ -92,7 +92,6 @@
   const btnDotsMenu = document.getElementById("btnDotsMenu");
   const dropdownMenu = document.getElementById("dropdownMenu");
   const menuItemLanTransfer = document.getElementById("menuItemLanTransfer");
-  const menuItemSupabase = document.getElementById("menuItemSupabase");
   const menuItemTheme = document.getElementById("menuItemTheme");
   const menuItemLogout = document.getElementById("menuItemLogout");
 
@@ -145,15 +144,6 @@
   const receiveSyncStatus = document.getElementById("receiveSyncStatus");
   const btnExportChatsFile = document.getElementById("btnExportChatsFile");
   const inputImportFile = document.getElementById("inputImportFile");
-
-  // Supabase Settings Modal
-  const modalSupabaseSettings = document.getElementById("modalSupabaseSettings");
-  const btnCloseSupabaseModal = document.getElementById("btnCloseSupabaseModal");
-  const supabaseUrlInput = document.getElementById("supabaseUrlInput");
-  const supabaseKeyInput = document.getElementById("supabaseKeyInput");
-  const supabaseStatusBadge = document.getElementById("supabaseStatusBadge");
-  const btnTestSupabase = document.getElementById("btnTestSupabase");
-  const btnSaveSupabase = document.getElementById("btnSaveSupabase");
 
   // Reaction Popover & Toast
   const reactionPopover = document.getElementById("reactionPopover");
@@ -433,21 +423,19 @@
 
   function getSupabaseConfig() {
     const config = window.SUPABASE_CONFIG || {};
-    const url = localStorage.getItem(SUPABASE_URL_KEY) || config.url || "";
-    const key = localStorage.getItem(SUPABASE_KEY_KEY) || config.anonKey || "";
+    const url = config.url || "";
+    const key = config.anonKey || "";
     return { url: url.trim(), key: key.trim() };
   }
 
   function initSupabase() {
     const { url, key } = getSupabaseConfig();
     if (!url || !key || typeof window.supabase === "undefined") {
-      updateSupabaseBadge(false);
       return;
     }
 
     try {
       supabaseClient = window.supabase.createClient(url, key);
-      updateSupabaseBadge(true);
 
       // 1. Registrierte Profile laden
       loadProfilesFromSupabase();
@@ -456,18 +444,6 @@
       subscribeRealtime();
     } catch (e) {
       console.warn("Supabase Init Fehler:", e);
-      updateSupabaseBadge(false);
-    }
-  }
-
-  function updateSupabaseBadge(connected) {
-    if (!supabaseStatusBadge) return;
-    if (connected) {
-      supabaseStatusBadge.textContent = "Verbunden (Echtzeit aktiv)";
-      supabaseStatusBadge.classList.add("connected");
-    } else {
-      supabaseStatusBadge.textContent = "Nicht verbunden (Lokaler Modus)";
-      supabaseStatusBadge.classList.remove("connected");
     }
   }
 
@@ -1444,57 +1420,7 @@
   }
 
   // =============================================================================
-  // 15. SUPABASE SETTINGS MODAL
-  // =============================================================================
-
-  function openSupabaseModal() {
-    const { url, key } = getSupabaseConfig();
-    supabaseUrlInput.value = url;
-    supabaseKeyInput.value = key;
-    modalSupabaseSettings.classList.add("open");
-  }
-
-  function closeSupabaseModal() {
-    modalSupabaseSettings.classList.remove("open");
-  }
-
-  async function handleSaveSupabase() {
-    const url = supabaseUrlInput.value.trim();
-    const key = supabaseKeyInput.value.trim();
-
-    localStorage.setItem(SUPABASE_URL_KEY, url);
-    localStorage.setItem(SUPABASE_KEY_KEY, key);
-
-    closeSupabaseModal();
-    showToast("Supabase Einstellungen gespeichert");
-    initSupabase();
-  }
-
-  async function handleTestSupabase() {
-    const url = supabaseUrlInput.value.trim();
-    const key = supabaseKeyInput.value.trim();
-
-    if (!url || !key) {
-      showToast("Bitte gib URL und Anon Key ein");
-      return;
-    }
-
-    try {
-      const testClient = window.supabase.createClient(url, key);
-      const { error } = await testClient.from("profiles").select("count").limit(1);
-      if (!error) {
-        showToast("✓ Verbindung erfolgreich!");
-        updateSupabaseBadge(true);
-      } else {
-        showToast("Verbindungstest: " + error.message);
-      }
-    } catch (e) {
-      showToast("Verbindungsfehler: " + e.message);
-    }
-  }
-
-  // =============================================================================
-  // 16. THEME UMSCHALTER (DARK / LIGHT)
+  // 15. THEME UMSCHALTER (DARK / LIGHT)
   // =============================================================================
 
   function initTheme() {
@@ -1593,11 +1519,6 @@
       openLanModal();
     });
 
-    menuItemSupabase.addEventListener("click", () => {
-      dropdownMenu.classList.remove("show");
-      openSupabaseModal();
-    });
-
     menuItemTheme.addEventListener("click", () => {
       dropdownMenu.classList.remove("show");
       toggleTheme();
@@ -1650,11 +1571,6 @@
     btnConnectSync.addEventListener("click", connectLanReceiver);
     btnExportChatsFile.addEventListener("click", handleFileExport);
     inputImportFile.addEventListener("change", handleFileImport);
-
-    // Supabase Modal Events
-    btnCloseSupabaseModal.addEventListener("click", closeSupabaseModal);
-    btnTestSupabase.addEventListener("click", handleTestSupabase);
-    btnSaveSupabase.addEventListener("click", handleSaveSupabase);
 
     // Reaction Popover click on emojis
     reactionPopover.querySelectorAll(".btn-opinion-quick").forEach(btn => {

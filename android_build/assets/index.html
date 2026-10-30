@@ -173,14 +173,6 @@
                 </svg>
                 <span>Chats übertragen (LAN)</span>
               </button>
-              <button class="dropdown-item" id="menuItemSupabase">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-                </svg>
-                <span>Supabase Server Konfig</span>
-              </button>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" id="menuItemTheme">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -433,51 +425,6 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" id="btnDoneLanModal">Schließen</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================== -->
-  <!-- MODAL: SUPABASE SERVER KONFIGURATION           -->
-  <!-- ============================================== -->
-  <div class="modal-backdrop" id="modalSupabaseSettings" aria-hidden="true">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-          </svg>
-          <h3>Supabase Server</h3>
-        </div>
-        <button class="modal-close" id="btnCloseSupabaseModal">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <p class="lan-intro">
-          Trage hier deine Supabase-Zugangsdaten ein. Bei Vercel-Deployments können diese auch per Umgebungsvariable gesetzt werden.
-        </p>
-
-        <div class="auth-field">
-          <label for="supabaseUrlInput">Projekt-URL (SUPABASE_URL)</label>
-          <input type="url" id="supabaseUrlInput" placeholder="https://xyzcompany.supabase.co" autocomplete="off">
-        </div>
-
-        <div class="auth-field">
-          <label for="supabaseKeyInput">Anon Public Key (SUPABASE_ANON_KEY)</label>
-          <input type="password" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off">
-        </div>
-
-        <div class="supabase-status-row">
-          <span>Server-Status:</span>
-          <span class="badge-status" id="supabaseStatusBadge">Nicht verbunden (Lokaler Modus)</span>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-secondary" id="btnTestSupabase">Verbindung testen</button>
-        <button class="btn-primary" id="btnSaveSupabase">Speichern & Verbinden</button>
       </div>
     </div>
   </div>
