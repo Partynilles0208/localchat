@@ -1,15 +1,10 @@
 /**
  * CLEAN SLATE // Supabase & Vercel Environment Configuration
  * 
- * Wenn die App auf Vercel bereitgestellt wird, können die Umgebungsvariablen
- * entweder hier eingetragen oder direkt im App-Menü (3 Punkte ⋮) hinterlegt werden.
- * Werte in localStorage überschreiben diese Standardwerte.
+ * Zentraler Server: Alle Nutzer verbinden sich automatisch mit dieser Instanz.
  */
 
 window.SUPABASE_CONFIG = {
-  // Trage hier deine Supabase-URL ein (z. B. "https://xyzcompany.supabase.co")
-  url: window.ENV_SUPABASE_URL || localStorage.getItem("clean_slate_supabase_url") || "",
-  
-  // Trage hier deinen öffentlichen Anon-Key ein (anon public)
-  anonKey: window.ENV_SUPABASE_ANON_KEY || localStorage.getItem("clean_slate_supabase_key") || ""
+  url: "https://nwynfxsolxnmiktpntlib.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53eW5meHNvbHhubWlrdHBudGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNzE1MTIsImV4cCI6MjEwODk0NzUxMn0.v6PR9NjzZwPwhSUJ-oHSPR6chom_BFbp6Prl2HzXVPw"
 };
