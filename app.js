@@ -22,19 +22,12 @@
   const GATE_KEY = "clean_slate_gate_passed_v1";
   const AUTH_KEY = "clean_slate_auth_user_v1";
   const THEME_KEY = "clean_slate_theme_v1";
-  const SUPABASE_URL_KEY = "clean_slate_supabase_url";
-  const SUPABASE_KEY_KEY = "clean_slate_supabase_key";
   const PROFILES_KEY = "clean_slate_known_profiles_v1";
   const MSGS_PREFIX = "clean_slate_msgs_";
+  const APP_VERSION = "1.0.1";
+  const GITHUB_VERSION_URL = "https://raw.githubusercontent.com/Partynilles0208/localchat/main/version.json";
 
   const VALID_GATE_CODES = ["0202818", "020818"];
-
-  // Default seed profiles if none are yet in the database (ensures instant usability)
-  const SEED_PROFILES = [
-    { username: "System", displayName: "System Notizen", status: "Online", lastSeen: new Date().toISOString() },
-    { username: "Sarah", displayName: "Sarah", status: "Zuletzt online vor 12 Min", lastSeen: new Date(Date.now() - 12 * 60000).toISOString() },
-    { username: "Maximilian", displayName: "Maximilian", status: "Online", lastSeen: new Date().toISOString() }
-  ];
 
   // =============================================================================
   // 2. STATE MANAGEMENT
@@ -92,8 +85,18 @@
   const btnDotsMenu = document.getElementById("btnDotsMenu");
   const dropdownMenu = document.getElementById("dropdownMenu");
   const menuItemLanTransfer = document.getElementById("menuItemLanTransfer");
+  const menuItemCheckUpdates = document.getElementById("menuItemCheckUpdates");
   const menuItemTheme = document.getElementById("menuItemTheme");
   const menuItemLogout = document.getElementById("menuItemLogout");
+
+  // Update Modal
+  const modalUpdate = document.getElementById("modalUpdate");
+  const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+  const btnDismissUpdate = document.getElementById("btnDismissUpdate");
+  const btnApplyUpdate = document.getElementById("btnApplyUpdate");
+  const updateVersionText = document.getElementById("updateVersionText");
+  const updateChangelogText = document.getElementById("updateChangelogText");
+  let pendingUpdateData = null;
 
   // User Footer
   const currentUserAvatar = document.getElementById("currentUserAvatar");
@@ -153,17 +156,32 @@
   // 4. STORAGE HELPERS (LOCAL-FIRST & SPARSAM)
   // =============================================================================
 
+  // Bereinigt alte Demo-Kontakte aus dem Browserspeicher
+  function cleanupOldDemoProfiles() {
+    try {
+      const raw = localStorage.getItem(PROFILES_KEY);
+      if (raw) {
+        let arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          arr = arr.filter(p => !["sarah", "maximilian", "system"].includes(p.username.toLowerCase()));
+          localStorage.setItem(PROFILES_KEY, JSON.stringify(arr));
+        }
+      }
+    } catch (_) {}
+  }
+
   function getProfiles() {
+    cleanupOldDemoProfiles();
     try {
       const raw = localStorage.getItem(PROFILES_KEY);
       if (raw) {
         const arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length > 0) return arr;
+        if (Array.isArray(arr)) return arr;
       }
     } catch (e) {
       console.warn("Profil-Ladefehler:", e);
     }
-    return [...SEED_PROFILES];
+    return [];
   }
 
   function saveProfiles(profiles) {
@@ -442,8 +460,45 @@
 
       // 2. Realtime Channel abonnieren
       subscribeRealtime();
+
+      // 3. Ephemere Offline-Nachrichten abrufen
+      fetchPendingEphemeralMessages();
+
+      // 4. Echtzeit-Aktualisierung für neue Profile
+      supabaseClient
+        .channel("profiles_realtime_sync")
+        .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+          loadProfilesFromSupabase();
+        })
+        .subscribe();
     } catch (e) {
       console.warn("Supabase Init Fehler:", e);
+    }
+  }
+
+  async function fetchPendingEphemeralMessages() {
+    if (!supabaseClient || !currentUser) return;
+    try {
+      const { data, error } = await supabaseClient
+        .from("ephemeral_messages")
+        .select("*")
+        .eq("recipient", currentUser);
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        data.forEach(item => {
+          handleIncomingMessage({
+            sender: item.sender,
+            recipient: item.recipient,
+            message: item.payload
+          });
+        });
+
+        // Nach Zustellung aus dem Relais löschen (spart Speicher)
+        const ids = data.map(d => d.id);
+        await supabaseClient.from("ephemeral_messages").delete().in("id", ids);
+      }
+    } catch (e) {
+      console.warn("Ephemeral Sync Fehler:", e);
     }
   }
 
@@ -1083,7 +1138,18 @@
       });
     }
 
-    // 3. UI bereinigen & rendern
+    // 3. Ephemeres Relais in Supabase (garantierte Zustellung, falls Empfänger kurz offline)
+    if (supabaseClient) {
+      try {
+        supabaseClient.from("ephemeral_messages").insert({
+          sender: currentUser,
+          recipient: activePeer,
+          payload: newMsg
+        }).then(() => {});
+      } catch (_) {}
+    }
+
+    // 4. UI bereinigen & rendern
     messageInput.value = "";
     cancelReply();
     stopTyping();
@@ -1451,7 +1517,63 @@
   }
 
   // =============================================================================
-  // 17. TOAST & HELFER
+  // 17. AUTO-UPDATE SYSTEM
+  // =============================================================================
+
+  function isNewerVersion(remote, local) {
+    const r = (remote || "").replace(/^v/, "").split(".").map(Number);
+    const l = (local || "").replace(/^v/, "").split(".").map(Number);
+    for (let i = 0; i < Math.max(r.length, l.length); i++) {
+      const rv = r[i] || 0;
+      const lv = l[i] || 0;
+      if (rv > lv) return true;
+      if (rv < lv) return false;
+    }
+    return false;
+  }
+
+  async function checkForUpdates(silent = true) {
+    try {
+      const res = await fetch(`${GITHUB_VERSION_URL}?_t=${Date.now()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.version) return;
+
+      if (isNewerVersion(data.version, APP_VERSION)) {
+        pendingUpdateData = data;
+        updateVersionText.textContent = `v${data.version}`;
+        updateChangelogText.textContent = data.changelog || "Neue Version verfügbar.";
+        modalUpdate.classList.add("open");
+      } else if (!silent) {
+        showToast(`App ist auf dem neuesten Stand (v${APP_VERSION})`);
+      }
+    } catch (err) {
+      if (!silent) showToast("Keine Verbindung zum Update-Server");
+    }
+  }
+
+  function closeUpdateModal() {
+    modalUpdate.classList.remove("open");
+  }
+
+  function applyUpdate() {
+    if (!pendingUpdateData) return;
+    const isAndroid = navigator.userAgent.toLowerCase().includes("android") || window.location.protocol === "file:";
+
+    if (isAndroid && pendingUpdateData.apkDownloadUrl) {
+      showToast("Lade neues APK herunter...");
+      window.location.href = pendingUpdateData.apkDownloadUrl;
+    } else {
+      showToast("Aktualisiere...");
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 400);
+    }
+    closeUpdateModal();
+  }
+
+  // =============================================================================
+  // 18. TOAST & HELFER
   // =============================================================================
 
   function showToast(text) {
@@ -1519,6 +1641,11 @@
       openLanModal();
     });
 
+    menuItemCheckUpdates.addEventListener("click", () => {
+      dropdownMenu.classList.remove("show");
+      checkForUpdates(false);
+    });
+
     menuItemTheme.addEventListener("click", () => {
       dropdownMenu.classList.remove("show");
       toggleTheme();
@@ -1572,6 +1699,11 @@
     btnExportChatsFile.addEventListener("click", handleFileExport);
     inputImportFile.addEventListener("change", handleFileImport);
 
+    // Update Modal Events
+    if (btnCloseUpdateModal) btnCloseUpdateModal.addEventListener("click", closeUpdateModal);
+    if (btnDismissUpdate) btnDismissUpdate.addEventListener("click", closeUpdateModal);
+    if (btnApplyUpdate) btnApplyUpdate.addEventListener("click", applyUpdate);
+
     // Reaction Popover click on emojis
     reactionPopover.querySelectorAll(".btn-opinion-quick").forEach(btn => {
       btn.addEventListener("click", (e) => {
@@ -1586,6 +1718,9 @@
 
     // Check Gate & Login
     checkGate();
+
+    // Automatischer Update-Check im Hintergrund
+    setTimeout(() => checkForUpdates(true), 2500);
   }
 
   // Run when DOM is ready

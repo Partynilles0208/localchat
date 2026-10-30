@@ -173,6 +173,12 @@
                 </svg>
                 <span>Chats übertragen (LAN)</span>
               </button>
+              <button class="dropdown-item" id="menuItemCheckUpdates">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+                <span>Nach Updates suchen</span>
+              </button>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" id="menuItemTheme">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -425,6 +431,38 @@
 
       <div class="modal-footer">
         <button class="btn-secondary" id="btnDoneLanModal">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: AUTO-UPDATE                             -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalUpdate" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          <h3>Update verfügbar</h3>
+        </div>
+        <button class="modal-close" id="btnCloseUpdateModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="lan-intro">
+          Eine neue Version von <strong>Clean Slate</strong> ist verfügbar!
+        </p>
+        <div class="sync-code-box" style="text-align: left; gap: 4px;">
+          <span style="font-size: 11px; color: var(--text-muted);">Neue Version:</span>
+          <span id="updateVersionText" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">v1.0.1</span>
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Änderungen:</span>
+          <span id="updateChangelogText" style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">Verbesserte Synchronisierung & Fehlerbehebungen.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnDismissUpdate">Später</button>
+        <button class="btn-primary" id="btnApplyUpdate">Jetzt aktualisieren</button>
       </div>
     </div>
   </div>
